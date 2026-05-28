@@ -1,5 +1,10 @@
 """Streamlit UI for the RAG system."""
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import streamlit as st
 
 from src.rag.pipeline import RAGPipeline
@@ -32,9 +37,20 @@ with st.sidebar:
 
 question = st.text_input("Enter your question:", placeholder="What is discussed about AI safety?")
 
-if st.button("Ask", type="primary") and question:
+col1, col2 = st.columns([1, 1])
+ask_clicked = col1.button("Ask", type="primary")
+clear_clicked = col2.button("Clear")
+
+if clear_clicked:
+    st.session_state.pop("response", None)
+    st.rerun()
+
+if ask_clicked and question:
     with st.spinner("Retrieving relevant context and generating answer..."):
-        response = pipeline.ask(question, top_k=top_k)
+        st.session_state["response"] = pipeline.ask(question, top_k=top_k)
+
+if "response" in st.session_state:
+    response = st.session_state["response"]
 
     st.markdown("## Answer")
     st.markdown(response.answer)
