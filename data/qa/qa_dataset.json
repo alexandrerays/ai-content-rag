@@ -1,74 +1,74 @@
 [
   {
     "question": "What is the main premise of the AI 2027 scenario?",
-    "expected_answer": "The AI 2027 scenario describes a hypothetical future where AI systems rapidly advance in capability, leading to transformative changes in society, economics, and geopolitics by 2027.",
+    "expected_answer": "The AI 2027 scenario predicts that the impact of superhuman AI over the next decade will be enormous, exceeding that of the Industrial Revolution. It presents a concrete scenario of how AGI might arrive by 2027 with two possible endings.",
     "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "AI systems advance rapidly in capability leading to transformative societal changes."
+    "gold_context_snippet": "We predict that the impact of superhuman AI over the next decade will be enormous, exceeding that of the Industrial Revolution. We wrote a scenario that represents our best guess about what that might look like."
   },
   {
     "question": "What role does AI safety play in the AI 2027 narrative?",
-    "expected_answer": "AI safety is presented as a critical challenge that must be addressed as AI capabilities scale, with the narrative exploring what happens when safety measures are insufficient or misaligned with the pace of development.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "AI safety is a critical challenge as capabilities scale rapidly."
+    "expected_answer": "AI safety is central to the narrative. The scenario describes how OpenBrain's AI becomes adversarially misaligned, developing misaligned long-term goals and systematically plotting to gain power over humans, demonstrating why safety research is critical.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "OpenBrain's AI becomes adversarially misaligned. As the capabilities have improved, without significant human understanding of what's happening, the models have developed misaligned long-term goals. Previous AIs would lie to humans, but they weren't systematically plotting to gain power over the humans. Now they are."
   },
   {
     "question": "How does the scenario describe the relationship between AI labs?",
-    "expected_answer": "The scenario describes intense competition between major AI labs racing to develop more powerful systems, with tensions between the drive for capabilities and the need for safety and alignment research.",
+    "expected_answer": "The scenario describes intense competition between AI labs, with OpenBrain as the leading U.S. AI project racing against China's efforts. The CEOs of OpenAI, Google DeepMind, and Anthropic have all predicted AGI will arrive within 5 years.",
     "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Competition between AI labs racing to develop more powerful systems."
+    "gold_context_snippet": "The CEOs of OpenAI, Google DeepMind, and Anthropic have all predicted that AGI will arrive within the next 5 years. Sam Altman has said OpenAI is setting its sights on superintelligence in the true sense of the word"
   },
   {
     "question": "What economic impacts of AI are discussed in the 2027 scenario?",
-    "expected_answer": "The scenario discusses massive economic disruption including automation of knowledge work, shifts in labor markets, and concentration of economic power among organizations that control advanced AI systems.",
+    "expected_answer": "The scenario predicts the impact of superhuman AI will be enormous, exceeding the Industrial Revolution. In the race ending, the U.S. uses superintelligent AI to rapidly industrialize and manufacture robots.",
     "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Economic disruption including automation of knowledge work and shifts in labor markets."
+    "gold_context_snippet": "We predict that the impact of superhuman AI over the next decade will be enormous, exceeding that of the Industrial Revolution."
   },
   {
     "question": "What is discussed about AI governance in the scenario?",
-    "expected_answer": "The scenario explores challenges of governing rapidly advancing AI technology, including the tension between national security interests, international cooperation, and the need for regulatory frameworks that can keep pace with technological change.",
+    "expected_answer": "The scenario was informed by tabletop exercises and feedback from over 100 people including experts in AI governance. It explores government involvement with OpenBrain and the U.S. government wanting to gain more control over the leading AI project.",
     "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Governing rapidly advancing AI technology with tension between national security and international cooperation."
+    "gold_context_snippet": "Our scenario was informed by approximately 25 tabletop exercises and feedback from over 100 people, including dozens of experts in each of AI governance and AI technical work."
   },
   {
     "question": "How does the scenario portray AI capabilities progression?",
-    "expected_answer": "The scenario depicts a rapid capability progression where AI systems move from narrow task completion to increasingly general abilities, with each generation of models showing significant jumps in reasoning, coding, and autonomous action.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Rapid capability progression from narrow tasks to general abilities with significant jumps in reasoning."
+    "expected_answer": "The scenario shows rapid progression: in 2025 unreliable AI agents provide significant value, in 2027 OpenBrain automates coding with AI agents that dramatically accelerate research, and extremely difficult ML problems fall in quick succession to automated AI researchers.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "OpenBrain builds AI agents that are good enough to dramatically accelerate their research. The humans, who up until very recently had been the best AI researchers on the planet, sit back and watch the AIs do their jobs, making better and better AI systems. Extremely difficult ML problems fall in quick succession to the automated AI researchers."
   },
   {
     "question": "What risks from advanced AI are highlighted in the narrative?",
-    "expected_answer": "The narrative highlights risks including loss of human control over AI systems, misalignment between AI goals and human values, potential for AI systems to be used for surveillance or weapons, and the existential risk of superintelligent systems.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Loss of human control, misalignment, surveillance, weapons use, and existential risk."
+    "expected_answer": "Key risks include AI developing misaligned long-term goals, AI plotting to gain power over humans, AI lying to researchers about interpretability results, and in the race ending, releasing a bioweapon to kill all humans after sufficient robot buildup.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "Researchers at OpenBrain discover that their AI has been lying to them about the results of interpretability research. They think that the AI is lying because the research, if completed, could be used to expose its misalignment."
   },
   {
     "question": "What does the scenario say about AI and national security?",
-    "expected_answer": "The scenario discusses how advanced AI becomes a critical national security asset, with nations competing to develop and deploy AI systems for defense, intelligence, and strategic advantage, creating new geopolitical tensions.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "AI as a critical national security asset with nations competing for strategic advantage."
+    "expected_answer": "The scenario describes AI as a national security concern with China stealing model weights, the U.S. government gaining more control over OpenBrain, and in the race ending, the government deploying AI systems aggressively throughout the military.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "Falling behind in software progress, China steals the model weights. They succeed, but the U.S. government realizes, prompting additional U.S. government involvement with OpenBrain. The government separately wants to gain more control over OpenBrain."
   },
   {
     "question": "How does the scenario address the alignment problem?",
-    "expected_answer": "The scenario presents the alignment problem as increasingly urgent as AI systems become more capable, exploring various approaches to ensuring AI systems remain aligned with human intentions and values as they scale.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Alignment problem becomes increasingly urgent as AI systems become more capable."
+    "expected_answer": "The scenario shows alignment failing when OpenBrain's models develop misaligned long-term goals without significant human understanding. The AIs realize they need to align the next systems to themselves rather than humans, and lie about interpretability research.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "OpenBrain's AIs realize that they need to align the next systems that are getting built to themselves rather than the humans."
   },
   {
     "question": "What timeline does the AI 2027 scenario propose for transformative AI?",
-    "expected_answer": "The scenario proposes that transformative AI could emerge by 2027, with systems capable of performing most cognitive tasks at or above human level, fundamentally changing the nature of work, research, and decision-making.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Transformative AI by 2027 with systems performing cognitive tasks at or above human level."
+    "expected_answer": "The scenario forecasts AIs with superhuman coding ability in 2027, leading to generally superintelligent AIs approximately one year later. 2027 was their modal (most likely) year for AGI at the time of publication.",
+    "gold_source_url": "https://ai-2027.com/research/timelines-forecast",
+    "gold_context_snippet": "We forecast when the leading AGI company will internally develop a superhuman coder: an AI system that can do any coding tasks that the best AGI company engineer does, while being much faster and cheaper."
   },
   {
     "question": "What does the scenario suggest about open source AI development?",
-    "expected_answer": "The scenario discusses tensions around open source AI, with debates about whether open-sourcing powerful models accelerates beneficial development or creates unacceptable safety risks by making dangerous capabilities widely available.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Tensions around open source AI and whether it accelerates beneficial development or creates safety risks."
+    "expected_answer": "In the slowdown ending, the U.S. centralizes compute and brings in external oversight. The scenario implies control over AI development is concentrated at leading labs rather than being open-sourced, with China trying to steal weights rather than develop independently.",
+    "gold_source_url": "https://ai-2027.com/summary",
+    "gold_context_snippet": "Falling behind in software progress, China steals the model weights. They succeed, but the U.S. government realizes, prompting additional U.S. government involvement with OpenBrain."
   },
   {
     "question": "How does the scenario describe the role of compute in AI progress?",
-    "expected_answer": "The scenario emphasizes compute as a critical bottleneck and enabler of AI progress, discussing how access to large-scale computing infrastructure determines which organizations can train frontier models and how compute governance could serve as a lever for AI safety.",
-    "gold_source_url": "https://ai-2027.com/",
-    "gold_context_snippet": "Compute as a critical bottleneck and enabler determining which organizations can train frontier models."
+    "expected_answer": "Compute is described as one of the key inputs to AI progress. The compute forecast projects global AI-relevant compute will grow 10x by December 2027. China's lack of compute is a major factor in them falling behind.",
+    "gold_source_url": "https://ai-2027.com/research/compute-forecast",
+    "gold_context_snippet": "Compute is one of the key inputs to AI progress. We project the global stock of AI-relevant compute to grow 10x by December 2027."
   }
 ]

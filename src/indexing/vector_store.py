@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStore:
-    def __init__(self, dimension: int = 384, store_path: str = VECTOR_STORE_PATH):
+    def __init__(self, dimension: int = 768, store_path: str = VECTOR_STORE_PATH):
         self.dimension = dimension
         self.store_path = Path(store_path)
         self.index: faiss.IndexFlatIP | None = None

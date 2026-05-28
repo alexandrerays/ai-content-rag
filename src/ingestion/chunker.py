@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import re
 from dataclasses import dataclass, field
 
 import tiktoken
@@ -42,16 +43,22 @@ def generate_document_id(source_url: str) -> str:
 
 
 def extract_sections(text: str) -> list[tuple[str, str]]:
-    """Split text into sections based on headings."""
+    """Split text into sections based on headings and structural cues."""
     lines = text.split("\n")
     sections = []
     current_section = ""
     current_text = []
 
     for line in lines:
-        if line.startswith("#") or (
-            len(line) > 3 and len(line) < 100 and line == line.strip() and not line.endswith(".")
-        ):
+        is_heading = False
+        if line.startswith("#"):
+            is_heading = True
+        elif re.match(r"^[A-Z][A-Za-z0-9 :,\-]{5,80}$", line.strip()):
+            stripped = line.strip()
+            if not stripped.endswith(".") and not stripped.endswith(","):
+                is_heading = True
+
+        if is_heading:
             if current_text:
                 sections.append((current_section, "\n".join(current_text)))
             current_section = line.lstrip("#").strip()
@@ -65,37 +72,82 @@ def extract_sections(text: str) -> list[tuple[str, str]]:
     return sections if sections else [("", text)]
 
 
+def split_into_sentences(text: str) -> list[str]:
+    """Split text into sentences for better chunk boundaries."""
+    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
 def chunk_text(
     text: str,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
 ) -> list[str]:
-    """Split text into overlapping chunks based on token count."""
+    """Split text into overlapping chunks with sentence-aware boundaries."""
     enc = tiktoken.get_encoding("cl100k_base")
     tokens = enc.encode(text)
 
     if len(tokens) <= chunk_size:
         return [text]
 
+    sentences = split_into_sentences(text)
+    if len(sentences) <= 1:
+        return _chunk_by_tokens(text, chunk_size, chunk_overlap, enc)
+
+    chunks = []
+    current_chunk_sentences = []
+    current_token_count = 0
+
+    for sentence in sentences:
+        sentence_tokens = len(enc.encode(sentence))
+
+        if sentence_tokens > chunk_size:
+            if current_chunk_sentences:
+                chunks.append(" ".join(current_chunk_sentences))
+                current_chunk_sentences = []
+                current_token_count = 0
+            sub_chunks = _chunk_by_tokens(sentence, chunk_size, chunk_overlap, enc)
+            chunks.extend(sub_chunks)
+            continue
+
+        if current_token_count + sentence_tokens > chunk_size and current_chunk_sentences:
+            chunks.append(" ".join(current_chunk_sentences))
+
+            overlap_sentences = []
+            overlap_tokens = 0
+            for s in reversed(current_chunk_sentences):
+                s_tokens = len(enc.encode(s))
+                if overlap_tokens + s_tokens > chunk_overlap:
+                    break
+                overlap_sentences.insert(0, s)
+                overlap_tokens += s_tokens
+
+            current_chunk_sentences = overlap_sentences
+            current_token_count = overlap_tokens
+
+        current_chunk_sentences.append(sentence)
+        current_token_count += sentence_tokens
+
+    if current_chunk_sentences:
+        chunks.append(" ".join(current_chunk_sentences))
+
+    return [c.strip() for c in chunks if c.strip()]
+
+
+def _chunk_by_tokens(
+    text: str, chunk_size: int, chunk_overlap: int, enc: tiktoken.Encoding
+) -> list[str]:
+    """Fallback: split by raw token count."""
+    tokens = enc.encode(text)
     chunks = []
     start = 0
     while start < len(tokens):
-        end = start + chunk_size
-        chunk_tokens = tokens[start:end]
-        chunk_text_str = enc.decode(chunk_tokens)
-
-        last_period = chunk_text_str.rfind(".")
-        last_newline = chunk_text_str.rfind("\n")
-        break_point = max(last_period, last_newline)
-
-        if break_point > len(chunk_text_str) * 0.5:
-            chunk_text_str = chunk_text_str[: break_point + 1]
-            actual_tokens = len(enc.encode(chunk_text_str))
-            end = start + actual_tokens
-
-        chunks.append(chunk_text_str.strip())
+        end = min(start + chunk_size, len(tokens))
+        chunk_str = enc.decode(tokens[start:end])
+        chunks.append(chunk_str.strip())
         start = end - chunk_overlap
-
+        if start >= len(tokens):
+            break
     return chunks
 
 
