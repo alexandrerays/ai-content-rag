@@ -1,0 +1,74 @@
+[
+  {
+    "question": "What is the main premise of the AI 2027 scenario?",
+    "expected_answer": "The AI 2027 scenario describes a hypothetical future where AI systems rapidly advance in capability, leading to transformative changes in society, economics, and geopolitics by 2027.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "AI systems advance rapidly in capability leading to transformative societal changes."
+  },
+  {
+    "question": "What role does AI safety play in the AI 2027 narrative?",
+    "expected_answer": "AI safety is presented as a critical challenge that must be addressed as AI capabilities scale, with the narrative exploring what happens when safety measures are insufficient or misaligned with the pace of development.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "AI safety is a critical challenge as capabilities scale rapidly."
+  },
+  {
+    "question": "How does the scenario describe the relationship between AI labs?",
+    "expected_answer": "The scenario describes intense competition between major AI labs racing to develop more powerful systems, with tensions between the drive for capabilities and the need for safety and alignment research.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Competition between AI labs racing to develop more powerful systems."
+  },
+  {
+    "question": "What economic impacts of AI are discussed in the 2027 scenario?",
+    "expected_answer": "The scenario discusses massive economic disruption including automation of knowledge work, shifts in labor markets, and concentration of economic power among organizations that control advanced AI systems.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Economic disruption including automation of knowledge work and shifts in labor markets."
+  },
+  {
+    "question": "What is discussed about AI governance in the scenario?",
+    "expected_answer": "The scenario explores challenges of governing rapidly advancing AI technology, including the tension between national security interests, international cooperation, and the need for regulatory frameworks that can keep pace with technological change.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Governing rapidly advancing AI technology with tension between national security and international cooperation."
+  },
+  {
+    "question": "How does the scenario portray AI capabilities progression?",
+    "expected_answer": "The scenario depicts a rapid capability progression where AI systems move from narrow task completion to increasingly general abilities, with each generation of models showing significant jumps in reasoning, coding, and autonomous action.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Rapid capability progression from narrow tasks to general abilities with significant jumps in reasoning."
+  },
+  {
+    "question": "What risks from advanced AI are highlighted in the narrative?",
+    "expected_answer": "The narrative highlights risks including loss of human control over AI systems, misalignment between AI goals and human values, potential for AI systems to be used for surveillance or weapons, and the existential risk of superintelligent systems.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Loss of human control, misalignment, surveillance, weapons use, and existential risk."
+  },
+  {
+    "question": "What does the scenario say about AI and national security?",
+    "expected_answer": "The scenario discusses how advanced AI becomes a critical national security asset, with nations competing to develop and deploy AI systems for defense, intelligence, and strategic advantage, creating new geopolitical tensions.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "AI as a critical national security asset with nations competing for strategic advantage."
+  },
+  {
+    "question": "How does the scenario address the alignment problem?",
+    "expected_answer": "The scenario presents the alignment problem as increasingly urgent as AI systems become more capable, exploring various approaches to ensuring AI systems remain aligned with human intentions and values as they scale.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Alignment problem becomes increasingly urgent as AI systems become more capable."
+  },
+  {
+    "question": "What timeline does the AI 2027 scenario propose for transformative AI?",
+    "expected_answer": "The scenario proposes that transformative AI could emerge by 2027, with systems capable of performing most cognitive tasks at or above human level, fundamentally changing the nature of work, research, and decision-making.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Transformative AI by 2027 with systems performing cognitive tasks at or above human level."
+  },
+  {
+    "question": "What does the scenario suggest about open source AI development?",
+    "expected_answer": "The scenario discusses tensions around open source AI, with debates about whether open-sourcing powerful models accelerates beneficial development or creates unacceptable safety risks by making dangerous capabilities widely available.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Tensions around open source AI and whether it accelerates beneficial development or creates safety risks."
+  },
+  {
+    "question": "How does the scenario describe the role of compute in AI progress?",
+    "expected_answer": "The scenario emphasizes compute as a critical bottleneck and enabler of AI progress, discussing how access to large-scale computing infrastructure determines which organizations can train frontier models and how compute governance could serve as a lever for AI safety.",
+    "gold_source_url": "https://ai-2027.com/",
+    "gold_context_snippet": "Compute as a critical bottleneck and enabler determining which organizations can train frontier models."
+  }
+]
