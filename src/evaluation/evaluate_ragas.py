@@ -1,194 +1,171 @@
-"""RAGAS-style evaluation metrics."""
+"""Evaluation using the RAGAS framework.
 
+Uses RAGAS metrics (faithfulness, answer_relevancy, context_precision,
+context_recall) evaluated by an LLM judge (OpenAI gpt-3.5-turbo by default).
+
+Run as: python -m src.evaluation.evaluate_ragas
+"""
+
+import asyncio
 import json
 import logging
-import re
+import math
+import sys
 from pathlib import Path
-from urllib.parse import urlparse
+
+from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import (
+    answer_relevancy,
+    context_precision,
+    context_recall,
+    faithfulness,
+)
+from ragas.run_config import RunConfig
 
 from src.config import PROCESSED_DIR
 from src.evaluation.qa_dataset import load_qa_dataset
-from src.indexing.embeddings import generate_embeddings
-from src.rag.generator import generate_answer
 from src.rag.pipeline import RAGPipeline
 
 logger = logging.getLogger(__name__)
 
+# --- Python 3.13+ compatibility patches for RAGAS ---
+# RAGAS 0.1.x uses asyncio patterns incompatible with Python 3.13+:
+# 1. Metric.ascore uses asyncio.wait_for which requires being inside a task
+# 2. Executor.results calls asyncio.as_completed without a running loop
 
-def _extract_ngrams(text: str, n: int) -> set[str]:
-    """Extract character n-grams from text."""
-    text = re.sub(r"\s+", " ", text.lower().strip())
-    return {text[i : i + n] for i in range(len(text) - n + 1)}
+import ragas.metrics.base as _ragas_base  # noqa: E402
+import ragas.executor as _ragas_executor  # noqa: E402
 
 
-def _ngram_overlap(text_a: str, text_b: str, n: int = 4) -> float:
-    """Compute Jaccard-like overlap of character n-grams."""
-    ngrams_a = _extract_ngrams(text_a, n)
-    ngrams_b = _extract_ngrams(text_b, n)
-    if not ngrams_a or not ngrams_b:
+async def _patched_ascore(self, row, callbacks=None, timeout=None):
+    return await self._ascore(row, callbacks)
+
+
+_ragas_base.Metric.ascore = _patched_ascore
+
+_original_results = _ragas_executor.Executor.results
+
+
+def _patched_results(self):
+    """Patch Executor.results to run within asyncio.run() for Python 3.13+ compat."""
+    from tqdm import tqdm
+    from ragas.executor import as_completed
+
+    run_config = self.run_config or RunConfig()
+
+    async def _aresults():
+        futures_as_they_finish = as_completed(
+            coros=[afunc(*args, **kwargs) for afunc, args, kwargs, _ in self.jobs],
+            max_workers=run_config.max_workers,
+        )
+        results = []
+        for future in tqdm(
+            futures_as_they_finish,
+            desc=self.desc,
+            total=len(self.jobs),
+            leave=self.keep_progress_bar,
+        ):
+            r = await future
+            results.append(r)
+        return results
+
+    results = asyncio.run(_aresults())
+    sorted_results = sorted(results, key=lambda x: x[0])
+    return [r[1] for r in sorted_results]
+
+
+_ragas_executor.Executor.results = _patched_results
+# --- End patches ---
+
+
+def _build_ragas_dataset(
+    pipeline: RAGPipeline, qa_dataset: list[dict]
+) -> Dataset:
+    """Run RAG pipeline on QA dataset and format for RAGAS evaluation."""
+    questions = []
+    answers = []
+    contexts = []
+    ground_truths = []
+
+    for i, item in enumerate(qa_dataset):
+        question = item["question"]
+        expected_answer = item.get("expected_answer", "")
+
+        logger.info(f"Processing question {i + 1}/{len(qa_dataset)}: {question[:50]}...")
+        response = pipeline.ask(question)
+
+        questions.append(question)
+        answers.append(response.answer)
+        contexts.append([c.get("text", "") for c in response.retrieved_contexts])
+        ground_truths.append(expected_answer)
+
+    return Dataset.from_dict({
+        "question": questions,
+        "answer": answers,
+        "contexts": contexts,
+        "ground_truth": ground_truths,
+    })
+
+
+def _safe_float(val) -> float:
+    """Convert to float, handling NaN."""
+    try:
+        f = float(val)
+        return 0.0 if math.isnan(f) else f
+    except (TypeError, ValueError):
         return 0.0
-    intersection = ngrams_a & ngrams_b
-    return len(intersection) / len(ngrams_a)
-
-
-def _cosine_similarity(vec_a, vec_b) -> float:
-    """Compute cosine similarity between two vectors."""
-    import numpy as np
-
-    dot = np.dot(vec_a, vec_b)
-    norm_a = np.linalg.norm(vec_a)
-    norm_b = np.linalg.norm(vec_b)
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return float(dot / (norm_a * norm_b))
-
-
-def _urls_match(retrieved_url: str, gold_url: str) -> bool:
-    """Check if URLs match, allowing prefix and path variations."""
-    if retrieved_url == gold_url:
-        return True
-    r = retrieved_url.rstrip("/")
-    g = gold_url.rstrip("/")
-    if r == g:
-        return True
-    if r.startswith(g) or g.startswith(r):
-        return True
-    return False
-
-
-def evaluate_faithfulness(answer: str, contexts: list[dict]) -> float:
-    """Evaluate if the answer is grounded in the retrieved context using n-gram overlap."""
-    context_text = " ".join(c.get("text", "") for c in contexts)
-    answer_sentences = [s.strip() for s in answer.split(".") if len(s.strip()) > 10]
-
-    if not answer_sentences:
-        return 1.0
-
-    grounded = 0
-    for sentence in answer_sentences:
-        overlap = _ngram_overlap(sentence, context_text, n=4)
-        if overlap > 0.25:
-            grounded += 1
-            continue
-        words = [w for w in sentence.lower().split() if len(w) > 3]
-        if not words:
-            grounded += 1
-            continue
-        context_lower = context_text.lower()
-        matched = sum(1 for w in words if w in context_lower)
-        if matched / len(words) > 0.4:
-            grounded += 1
-
-    return grounded / len(answer_sentences)
-
-
-def evaluate_answer_relevance(answer: str, question: str) -> float:
-    """Evaluate answer relevance using embedding similarity."""
-    embeddings = generate_embeddings([question, answer])
-    return max(0.0, _cosine_similarity(embeddings[0], embeddings[1]))
-
-
-def evaluate_context_precision(contexts: list[dict], gold_url: str, gold_snippet: str = "") -> float:
-    """Evaluate if relevant contexts are ranked higher using URL and content matching."""
-    if not contexts:
-        return 0.0
-
-    relevant_positions = []
-    for i, ctx in enumerate(contexts):
-        if _urls_match(ctx.get("source_url", ""), gold_url):
-            relevant_positions.append(i + 1)
-            continue
-        if gold_snippet:
-            chunk_text = ctx.get("text", "")
-            overlap = _ngram_overlap(gold_snippet, chunk_text, n=4)
-            if overlap > 0.15:
-                relevant_positions.append(i + 1)
-
-    if not relevant_positions:
-        return 0.0
-
-    precision_sum = 0.0
-    for i, pos in enumerate(relevant_positions, 1):
-        precision_sum += i / pos
-
-    return precision_sum / len(relevant_positions)
-
-
-def evaluate_context_recall(
-    contexts: list[dict], gold_snippet: str
-) -> float:
-    """Evaluate how much of the gold context is captured using n-gram matching."""
-    retrieved_text = " ".join(c.get("text", "") for c in contexts)
-    gold_sentences = [s.strip() for s in gold_snippet.split(".") if len(s.strip()) > 10]
-
-    if not gold_sentences:
-        return 1.0
-
-    recalled = 0
-    for sentence in gold_sentences:
-        overlap = _ngram_overlap(sentence, retrieved_text, n=4)
-        if overlap > 0.3:
-            recalled += 1
-            continue
-        key_words = [w for w in sentence.lower().split() if len(w) > 3]
-        if not key_words:
-            recalled += 1
-            continue
-        retrieved_lower = retrieved_text.lower()
-        matched = sum(1 for w in key_words if w in retrieved_lower)
-        if matched / len(key_words) > 0.5:
-            recalled += 1
-
-    return recalled / len(gold_sentences)
 
 
 def evaluate_ragas(
     pipeline: RAGPipeline | None = None,
     dataset: list[dict] | None = None,
 ) -> dict:
-    """Run full RAGAS-style evaluation."""
+    """Run RAGAS evaluation on the RAG pipeline.
+
+    RAGAS uses LLM-as-judge (OpenAI by default) to evaluate:
+    - faithfulness: Is the answer grounded in the retrieved context?
+    - answer_relevancy: Is the answer relevant to the question?
+    - context_precision: Are relevant documents ranked higher?
+    - context_recall: Does the context cover the ground truth?
+    """
     if pipeline is None:
         pipeline = RAGPipeline()
     if dataset is None:
         dataset = load_qa_dataset()
 
-    metrics = {
-        "faithfulness": [],
-        "answer_relevance": [],
-        "context_precision": [],
-        "context_recall": [],
-    }
+    logger.info("Running RAG pipeline on QA dataset...")
+    ragas_dataset = _build_ragas_dataset(pipeline, dataset)
+
+    logger.info("Running RAGAS evaluation (LLM-judged metrics)...")
+    metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
+    run_config = RunConfig(timeout=600, max_retries=10, max_workers=4)
+
+    result = evaluate(
+        dataset=ragas_dataset,
+        metrics=metrics,
+        run_config=run_config,
+        raise_exceptions=False,
+    )
+
+    scores = {}
+    for k, v in result.items():
+        if isinstance(v, (int, float)):
+            scores[k] = _safe_float(v)
+
     details = []
-
-    for item in dataset:
-        question = item["question"]
-        gold_url = item.get("gold_source_url", "")
-        gold_snippet = item.get("gold_context_snippet", "")
-
-        response = pipeline.ask(question)
-        contexts = response.retrieved_contexts
-
-        faith = evaluate_faithfulness(response.answer, contexts)
-        relevance = evaluate_answer_relevance(response.answer, question)
-        precision = evaluate_context_precision(contexts, gold_url, gold_snippet)
-        recall = evaluate_context_recall(contexts, gold_snippet)
-
-        metrics["faithfulness"].append(faith)
-        metrics["answer_relevance"].append(relevance)
-        metrics["context_precision"].append(precision)
-        metrics["context_recall"].append(recall)
-
+    result_df = result.to_pandas()
+    for _, row in result_df.iterrows():
         details.append({
-            "question": question,
-            "answer": response.answer,
-            "faithfulness": faith,
-            "answer_relevance": relevance,
-            "context_precision": precision,
-            "context_recall": recall,
+            "question": row.get("question", ""),
+            "answer": row.get("answer", ""),
+            "faithfulness": _safe_float(row.get("faithfulness")),
+            "answer_relevancy": _safe_float(row.get("answer_relevancy")),
+            "context_precision": _safe_float(row.get("context_precision")),
+            "context_recall": _safe_float(row.get("context_recall")),
         })
 
-    averages = {k: sum(v) / len(v) if v else 0.0 for k, v in metrics.items()}
-    return {"averages": averages, "details": details}
+    return {"averages": scores, "details": details}
 
 
 def run_and_save(output_path: Path | None = None) -> dict:
@@ -207,4 +184,5 @@ def run_and_save(output_path: Path | None = None) -> dict:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    run_and_save()
+    results = run_and_save()
+    print(json.dumps(results["averages"], indent=2))
