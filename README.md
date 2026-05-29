@@ -1,34 +1,35 @@
-# RAG System - Domain-Specific AI Knowledge Base
+# AI Content RAG
 
-A complete Retrieval-Augmented Generation system that answers questions about AI topics using content from [ai-2027.com](https://ai-2027.com/) as its knowledge base. The system produces grounded answers with citations and evaluates performance against a base LLM.
+A complete Retrieval-Augmented Generation system that answers questions about AI topics using content from [ai-2027.com](https://ai-2027.com/) as its knowledge base. The system produces grounded answers with citations and evaluates performance using the RAGAS framework.
 
 ## Architecture
 
 ```mermaid
 graph TD
-    A[Source: ai-2027.com] --> B[Scraper]
+    A[Source: ai-2027.com] --> B[Scraper/Trafilatura]
     B --> C[Raw Documents]
     C --> D[Cleaner]
-    D --> E[Chunker]
-    E --> F[Embedding Model]
-    F --> G[FAISS Vector Store]
+    D --> E[Chunker - 768 tokens, 150 overlap]
+    E --> F[all-mpnet-base-v2 Embeddings]
+    F --> G[FAISS Vector Store - 1130 chunks]
 
     H[User Question] --> I[Query Embedding]
     I --> J[Vector Search]
     G --> J
     H --> K[BM25 Search]
-    J --> L[Hybrid Reranking]
+    J --> L[Hybrid Fusion - 0.7 vector / 0.3 BM25]
     K --> L
-    L --> M[Top-K Chunks]
-    M --> N[LLM Generation]
-    N --> O[Grounded Answer + Citations]
+    L --> M[Cross-Encoder Reranker]
+    M --> N[Top-K Chunks]
+    N --> O[LLM Generation - gpt-4o-mini]
+    O --> P[Grounded Answer + Citations]
 
-    P[FastAPI] --> H
-    Q[Streamlit UI] --> P
+    Q[FastAPI] --> H
+    R[Streamlit UI] --> Q
 
-    R[Evaluation] --> S[RAGAS Metrics]
-    R --> T[Retrieval Metrics]
-    R --> U[Base vs RAG Comparison]
+    S[Evaluation] --> T[RAGAS - LLM Judge]
+    S --> U[Retrieval Metrics]
+    S --> V[Base vs RAG Comparison]
 ```
 
 ## Setup
@@ -36,22 +37,32 @@ graph TD
 ### 1. Clone and install dependencies
 
 ```bash
-cd rag-system
+git clone https://github.com/alexandrerays/ai-content-rag.git
+cd ai-content-rag
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure API keys
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your API keys and settings
 ```
 
-Set at least one LLM provider:
-- `OPENAI_API_KEY` for OpenAI (default)
-- `ANTHROPIC_API_KEY` for Anthropic
+Required:
+- `OPENAI_API_KEY` — used for LLM generation and RAGAS evaluation
+
+Optional:
+- `ANTHROPIC_API_KEY` — alternative LLM provider
+- `LLM_PROVIDER` — `openai` (default) or `anthropic`
+- `LLM_MODEL` — `gpt-4o-mini` (default)
+- `EMBEDDING_MODEL` — `sentence-transformers/all-mpnet-base-v2` (default)
+- `RERANKER_MODEL` — `cross-encoder/ms-marco-MiniLM-L-6-v2` (default)
+- `DEFAULT_TOP_K` — number of chunks to retrieve (default: 5)
+- `CHUNK_SIZE` — tokens per chunk (default: 768)
+- `CHUNK_OVERLAP` — overlap tokens between chunks (default: 150)
 
 ### 3. Ingest data
 
@@ -87,16 +98,7 @@ Opens at: http://localhost:8501
 
 ### 7. Run evaluation
 
-```bash
-# Full RAGAS-style evaluation
-python -m src.evaluation.evaluate_ragas
-
-# Retrieval metrics only
-python -m src.evaluation.evaluate_retrieval
-
-# Base LLM vs RAG comparison
-python -m src.evaluation.compare_base_vs_rag
-```
+See the [Evaluation Metrics](#evaluation-metrics) section for details.
 
 ## API Endpoints
 
@@ -180,43 +182,56 @@ python -m src.evaluation.compare_base_vs_rag
 
 Results are saved to `data/processed/`.
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Embeddings | `sentence-transformers/all-mpnet-base-v2` (768-dim) |
+| Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| Vector Store | FAISS (IndexFlatIP, cosine similarity) |
+| Keyword Search | BM25 (rank-bm25) |
+| LLM | OpenAI gpt-4o-mini (configurable) |
+| API | FastAPI |
+| UI | Streamlit |
+| Evaluation | RAGAS framework |
+
 ## Project Structure
 
 ```
-rag-system/
-  src/
-    config.py              # Configuration and environment variables
-    ingestion/
-      scraper.py           # Web scraper for ai-2027.com
-      loader.py            # Load raw documents from disk
-      cleaner.py           # Text cleaning and preprocessing
-      chunker.py           # Document chunking with metadata
-    indexing/
-      embeddings.py        # Embedding generation (sentence-transformers)
-      vector_store.py      # FAISS vector store wrapper
-      build_index.py       # Full indexing pipeline
-    rag/
-      retriever.py         # Hybrid retrieval (vector + BM25)
-      generator.py         # LLM generation (OpenAI/Anthropic)
-      pipeline.py          # RAG pipeline orchestration
-      prompts.py           # Prompt templates
-    evaluation/
-      qa_dataset.py        # QA dataset loading/saving
-      evaluate_ragas.py    # RAGAS-style evaluation
-      evaluate_retrieval.py # Retrieval metrics
-      compare_base_vs_rag.py # Base vs RAG comparison
-    api/
-      main.py              # FastAPI application
-    ui/
-      app.py               # Streamlit interface
-  data/
-    raw/                   # Scraped raw documents
-    processed/             # FAISS index and evaluation results
-    qa/                    # QA evaluation dataset
-  tests/
-    test_chunking.py       # Chunking unit tests
-    test_retrieval.py      # Vector store tests
-    test_rag_pipeline.py   # Pipeline integration tests
+ai-content-rag/
+├── src/
+│   ├── config.py               # Configuration and environment variables
+│   ├── ingestion/
+│   │   ├── scraper.py          # Web scraper for ai-2027.com (trafilatura)
+│   │   ├── loader.py           # Load raw documents from disk
+│   │   ├── cleaner.py          # Text cleaning and preprocessing
+│   │   └── chunker.py          # Sentence-aware chunking with metadata
+│   ├── indexing/
+│   │   ├── embeddings.py       # Embedding generation (sentence-transformers)
+│   │   ├── vector_store.py     # FAISS vector store wrapper
+│   │   └── build_index.py      # Full indexing pipeline
+│   ├── rag/
+│   │   ├── retriever.py        # Hybrid retrieval (vector + BM25 + reranking)
+│   │   ├── generator.py        # LLM generation (OpenAI/Anthropic)
+│   │   ├── pipeline.py         # RAG pipeline orchestration
+│   │   └── prompts.py          # Prompt templates with citation instructions
+│   ├── evaluation/
+│   │   ├── qa_dataset.py       # QA dataset loading
+│   │   ├── evaluate_ragas.py   # RAGAS framework evaluation
+│   │   ├── evaluate_retrieval.py # Hit rate and recall metrics
+│   │   └── compare_base_vs_rag.py # Base LLM vs RAG comparison
+│   ├── api/
+│   │   └── main.py             # FastAPI application
+│   └── ui/
+│       └── app.py              # Streamlit interface
+├── data/
+│   ├── raw/                    # Scraped raw documents (JSON)
+│   ├── processed/              # FAISS index and evaluation results
+│   └── qa/                     # Labeled QA evaluation dataset (12 examples)
+└── tests/
+    ├── test_chunking.py        # Chunking unit tests
+    ├── test_retrieval.py       # Vector store tests
+    └── test_rag_pipeline.py    # Pipeline integration tests
 ```
 
 ## Running Tests
