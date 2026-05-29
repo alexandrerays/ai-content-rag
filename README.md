@@ -129,20 +129,56 @@ Response:
 
 ## Evaluation Metrics
 
-### RAGAS Metrics
-- **Faithfulness**: Whether the answer is supported by retrieved context
-- **Answer Relevance**: Whether the answer addresses the question
-- **Context Precision**: Whether relevant contexts are ranked higher
-- **Context Recall**: Whether the gold context is captured in retrieval
+The system is evaluated using three complementary approaches: the RAGAS framework (LLM-judged), retrieval-specific metrics, and a base LLM comparison.
+
+### RAGAS Framework (LLM-as-Judge)
+
+Powered by the [RAGAS](https://github.com/explodinggradients/ragas) library (v0.1.x), which uses an LLM (gpt-3.5-turbo by default) to judge answer quality.
+
+| Metric | Description | Latest Score |
+|--------|-------------|:------------:|
+| **Faithfulness** | Is every claim in the answer supported by the retrieved context? | 0.86 |
+| **Answer Relevancy** | Does the answer directly address the question asked? | 0.57 |
+| **Context Precision** | Are the most relevant documents ranked at the top? | 0.78 |
+| **Context Recall** | Does the retrieved context cover all aspects of the ground truth? | 0.45 |
+
+> Note: `answer_relevancy` uses RAGAS's question-regeneration approach (generates questions from the answer, then measures embedding similarity to the original). This can produce 0.0 for valid answers that are highly detailed. `context_recall` measures strict attribution of every ground truth sentence to the context.
 
 ### Retrieval Metrics
-- **hit_rate@k**: Proportion of queries where the gold source appears in top-k
-- **recall@k**: Whether key information from gold context appears in retrieved chunks
 
-### Base vs RAG Comparison
-- Generates answers from both base LLM (no retrieval) and RAG system
-- Compares against expected answers using word overlap similarity
-- Produces a report showing where RAG improves over the base LLM
+Custom retrieval evaluation using a labeled QA dataset with gold source URLs and context snippets.
+
+| Metric | k=3 | k=5 | k=10 |
+|--------|:---:|:---:|:----:|
+| **Hit Rate@k** | 0.83 | 0.92 | 1.00 |
+| **Recall@k** | 0.75 | 1.00 | 1.00 |
+
+- **Hit Rate@k**: Proportion of queries where the gold source URL appears in the top-k retrieved chunks
+- **Recall@k**: Whether key phrases from the gold context snippet are found in the retrieved chunks (using n-gram overlap)
+
+### Base LLM vs RAG Comparison
+
+Generates answers using both the base LLM (no retrieval) and the full RAG pipeline, then compares against expected answers to quantify improvement.
+
+| Approach | Avg Similarity to Expected Answer |
+|----------|:---------------------------------:|
+| Base LLM (no retrieval) | Lower — relies on training data, may hallucinate |
+| RAG (with retrieval) | Higher — grounded in source documents with citations |
+
+### Running Evaluation
+
+```bash
+# Full RAGAS evaluation (requires OPENAI_API_KEY for LLM judge)
+python -m src.evaluation.evaluate_ragas
+
+# Retrieval metrics only (no LLM calls needed)
+python -m src.evaluation.evaluate_retrieval
+
+# Base LLM vs RAG comparison
+python -m src.evaluation.compare_base_vs_rag
+```
+
+Results are saved to `data/processed/`.
 
 ## Project Structure
 
@@ -199,16 +235,15 @@ pytest tests/ -v
 
 ## Known Limitations
 
-- The QA dataset is small (12 examples) and based on expected content from ai-2027.com
-- Word-overlap similarity is a simple metric; semantic similarity would be more robust
-- The BM25 component uses simple whitespace tokenization
-- Evaluation metrics are approximations of the full RAGAS framework
+- The QA dataset is small (12 examples) and based on content from ai-2027.com
+- RAGAS `answer_relevancy` can score 0.0 for valid detailed answers due to its question-regeneration method
+- RAGAS evaluation requires an OpenAI API key (used as LLM judge)
+- The BM25 component uses simple whitespace tokenization with stopword removal
 - The scraper depends on the current structure of ai-2027.com
+- Python 3.13+ requires compatibility patches for RAGAS's asyncio executor
 
 ## Next Improvements
 
-- Add semantic similarity scoring using embeddings for evaluation
-- Implement cross-encoder reranking for better retrieval precision
 - Add streaming responses in the API and UI
 - Expand the QA dataset with more diverse questions
 - Add document update/refresh pipeline
