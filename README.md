@@ -4,33 +4,7 @@ A complete Retrieval-Augmented Generation system that answers questions about AI
 
 ## Architecture
 
-```mermaid
-graph TD
-    A[Source: ai-2027.com] --> B[Scraper/Trafilatura]
-    B --> C[Raw Documents]
-    C --> D[Cleaner]
-    D --> E[Chunker - 768 tokens, 150 overlap]
-    E --> F[all-mpnet-base-v2 Embeddings]
-    F --> G[FAISS Vector Store - 1130 chunks]
-
-    H[User Question] --> I[Query Embedding]
-    I --> J[Vector Search]
-    G --> J
-    H --> K[BM25 Search]
-    J --> L[Hybrid Fusion - 0.7 vector / 0.3 BM25]
-    K --> L
-    L --> M[Cross-Encoder Reranker]
-    M --> N[Top-K Chunks]
-    N --> O[LLM Generation - gpt-4o-mini]
-    O --> P[Grounded Answer + Citations]
-
-    Q[FastAPI] --> H
-    R[Streamlit UI] --> Q
-
-    S[Evaluation] --> T[RAGAS - LLM Judge]
-    S --> U[Retrieval Metrics]
-    S --> V[Base vs RAG Comparison]
-```
+![](assets/arq.png)
 
 ## Setup
 
